@@ -1,6 +1,11 @@
-import email, os, sys, nltk
+import email, os, sys, nltk, re
 import pandas as pd
 import numpy as np
+from collections import defaultdict
+from nltk.corpus import wordnet as wn
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn import model_selection, naive_bayes, svm
+from sklearn.metrics import accuracy_score
 
 
 class Import_Data():
@@ -12,8 +17,13 @@ class Import_Data():
 
     _cwd
 
+    # content focused including headers and preserving information
     _ham_word_list
     _spam_word_list
+
+    # text focused only representing body, not working on HTML mail though
+    _spam_body_word_list
+    _ham_body_word_list
 
     # matrix of message, label columns mixed spam and ham
     _spam_ham_matrix
@@ -173,63 +183,114 @@ class Import_Data():
 
         else: return content
 
+    # switching the input lists to body focused lists self._ham_body_word_list+self._ham_body_word_list 
+    # might provide better results since header has a lot of content not increasing entropy
     def import_as_data_frame(self):
-        self._spam_ham_matrix = pd.DataFrame(self._spam_word_list+self._ham_word_list, columns=["Message", "Label"])
+        self._spam_ham_matrix = pd.DataFrame(self._spam_word_list+self._ham_word_list, columns=["Message", "Label"]).dropna()
 
     # builds a list of tuples representing a message 
     # [(list of words in message, label),...]
     def build_spam_word_list(self):
         self._spam_word_list = list()
+        #self._spam_body_word_list = list()
     
         for document in self._spam_files:
             self._spam_word_list.append((self.get_email_msg_content(document), 'spam'))
+            #self._spam_body_word_list.append((self.get_email_msg_body(document), 'spam'))
 
     # builds a list of tuples representing a message 
     # [(list of words in message, label),...]
     def build_ham_word_list(self):
         self._ham_word_list = list()
+        #self._ham_body_word_list = list()
     
         for document in self._ham_files:
             self._ham_word_list.append((self.get_email_msg_content(document), 'ham'))
+            #self._ham_body_word_list.append((self.get_email_msg_body(document), 'ham'))
+
+    
 
 
 class Text_Processor():
 
+    '''
+    _message
+
+    _lematized_word_list
+    # list will be taged, consists of tuples (word, pos_tag)
+    _taged_word_list
+    '''
+
+    __stop_word_symbols= ['.',',','’',"“",';','´','\'','\"','`','?','!','$','%','*','&','=',':','(',')']
     
-    def __init__(self):
-        pass
+    def __init__(self, message, stop_words = True, lower = True, lemmatize=False, delete_markups=True, delete_duplicates=True):
+        
+        self.set_message(message)
+        
+        if delete_markups: self.remove_html_code()
+        if stop_words: self.remove_stop_words()
+        if lower: self.lower_message()
+        if delete_duplicates: self.delete_duplicates()
+        if lemmatize: self.lemmatize_message()
+        
+    def get_message(self):
+        return self._message
             
-    # documents is list of tuples (words, label)
-    def set_all_words(self, documents):
-        pass
+    # returns a DataFrame of message and label columns
+    def set_message(self, message):
+        self._message = message
+
+    # tokenize the message by words
+    def tokenize_message_by_words(self):
+        self._message = nltk.word_tokenize(self._message)
+
+    # apply pos_tags
+    def pos_tag_word_list(self):
+        self._taged_word_list = nltk.pos_tag(self._message.split())
+
+    # remove stop words
+    def remove_stop_words(self):
+        stop_words = set(nltk.corpus.stopwords.words('english'))
+        stop_words.update(self.__stop_word_symbols)
+        filtered = [w for w in self._message.split() if not w in stop_words and w.isalpha()]
+        self._message = " ".join(filtered)
+
+    # lower case the message
+    def lower_message(self):
+        self._message = self._message.lower()
+
+    # remove html or other markup tags
+    def remove_html_code(self):
+        pattern = r"<.*?>|&([a-z0-9]+|#[0-9]{1,6}|#x[0-9a-f]{1,6});"
+        prog = re.compile(pattern, re.MULTILINE)
+        self._message = re.sub(prog, "", self._message)
+
+    def delete_duplicates(self):
+        self._message = " ".join(set(self._message.split()))
+
+    def lemmatize_message(self):
+        # WordNetLemmatizer requires Pos tags to classify word 
+        # default is Noun
+        tag_map = defaultdict(lambda : wn.NOUN)
+        tag_map['J'] = wn.ADJ
+        tag_map['V'] = wn.VERB
+        tag_map['R'] = wn.ADV
+
+        lemmatizer = nltk.stem.WordNetLemmatizer()
+        self.pos_tag_word_list()
+        self._lemmatized_word_list = list()
+
+        for word, tag in self._taged_word_list:
+            self._lemmatized_word_list.append(lemmatizer.lemmatize(word, tag_map[tag[0]]))
+
+        self._message = " ".join(self._lemmatized_word_list)
+        
 
 
 d = Import_Data()
-print(d.get_spam_ham_matrix().head())
+corpus = d.get_spam_ham_matrix()
+t = Text_Processor(corpus['Message'][0], lemmatize=True)
+print(t.get_message())
+#print(d.get_spam_ham_matrix().head())
 
-
-'''
-a = os.path.dirname(sys.argv[0])+"/Data_Sets/ham/"
-documents = os.listdir(a)
-
-with open('/Users/t/projects/spamham_classification/Data_Sets/spam/0488.6d41f6d7222978a3ee2b6cfbfce55a02', 'r') as f:
-    b = email.message_from_file(f)
-body = ""
-
-if b.is_multipart():
-    for part in b.walk():
-        ctype = part.get_content_type()
-        cdispo = str(part.get('Content-Disposition'))
-
-        # skip any text/plain (txt) attachments
-        if ctype == 'text/plain' and 'attachment' not in cdispo:
-            body = part.get_payload(decode=True)  # decode
-            break
-# not multipart - i.e. plain text, no attachments, keeping fingers crossed
-else:
-    body = b.get_payload(decode=True)
-
-
-if type(body) is bytes:
-    print(type(body.decode()))
-'''
+# TODO implement TFIDF and classifier
