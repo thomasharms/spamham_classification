@@ -1,10 +1,19 @@
 import email, os, sys, nltk, re
+
 import pandas as pd
 import numpy as np
+
 from collections import defaultdict
+
 from nltk.corpus import wordnet as wn
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn import model_selection, naive_bayes, svm
+
+from sklearn.preprocessing import LabelEncoder
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
+from sklearn.linear_model import LogisticRegression, SGDClassifier
+from sklearn.svm import SVC, LinearSVC, NuSVC
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn import model_selection
 from sklearn.metrics import accuracy_score
 
 
@@ -208,8 +217,6 @@ class Import_Data():
             self._ham_word_list.append((self.get_email_msg_content(document), 'ham'))
             #self._ham_body_word_list.append((self.get_email_msg_body(document), 'ham'))
 
-    
-
 
 class Text_Processor():
 
@@ -223,7 +230,7 @@ class Text_Processor():
 
     __stop_word_symbols= ['.',',','’',"“",';','´','\'','\"','`','?','!','$','%','*','&','=',':','(',')']
     
-    def __init__(self, message, stop_words = True, lower = True, lemmatize=False, delete_markups=True, delete_duplicates=True):
+    def __init__(self, message, stop_words = True, lower = True, lemmatize=False, delete_markups=True, delete_duplicates=False):
         
         self.set_message(message)
         
@@ -284,13 +291,131 @@ class Text_Processor():
             self._lemmatized_word_list.append(lemmatizer.lemmatize(word, tag_map[tag[0]]))
 
         self._message = " ".join(self._lemmatized_word_list)
+
+class Data_Transform():
+
+    '''
+    Data_Frame of imported Data
+    # input corpus consists of ['Message', 'Label']
+    # transforms into ['Message', 'Label', 'processed_message']
+    _corpus
+    
+    _max_features
+
+    # SciPy sparse matrix of data
+    # BOW or TFIDF
+    _vectorized_data
+
+    _Train_X
+    _Train_Y
+
+    # encoded target vectors
+    _Test_X
+    _Test_Y
+
+    _vectorized_Train_X
+    _vectorized_Test_X
+    '''
+
+    def __init__(self, corpus, max_features=5000):
+        self._corpus = corpus
+        self._max_features = max_features
+
+        # remove stop words and html, lemmatize, lower the message 
+        # delete duplicates 
+        self.prepare_corpus()
+
+        # split text into train and test data by ratio
+        self.split_data(ratio=0.3)
+
+        # digitize raw labels into numbers
+        self.encode_labels()
+
+        # one of those two algorithms could be used to vectorize
+        # tfidf counters word frequency in large document though
         
+        #self.vectorize_tf()
+        self.vectorize_tfidf()
+
+    def get_data_vectors(self):
+        return self._vectorized_Train_X, self._vectorized_Test_X, self._Train_Y, self._Test_Y
+
+    def prepare_corpus(self):
+        for index, message in enumerate(self._corpus['Message']):
+
+            #this configuration removes stop words and html, lemmatizes and lowers the message
+            text_processor = Text_Processor(message, lemmatize=True)
+            self._corpus.loc[index, 'processed_message'] = text_processor.get_message()
+
+    def encode_labels(self):
+        encoder = LabelEncoder()
+        self._Train_Y = encoder.fit_transform(self._Train_Y)
+        self._Test_Y = encoder.fit_transform(self._Test_Y)
+
+    def split_data(self, ratio=0.2):
+        self._Train_X, self._Test_X, self._Train_Y, self._Test_Y = model_selection.train_test_split(self._corpus['processed_message'], self._corpus['Label'], test_size=ratio)
+
+    # vectorize into bow model using CountVectorizer
+    def vectorize_tf(self):
+        vectorizer = CountVectorizer(max_features=self._max_features)
+        vectorizer.fit(self._corpus['processed_message'])
+        self._vectorized_Train_X = vectorizer.transform(self._Train_X)
+        self._vectorized_Test_X = vectorizer.transform(self._Test_X)
+
+    # vectorize into bow model using CountVectorizer
+    def vectorize_tfidf(self):
+        vectorizer = TfidfVectorizer(max_features=self._max_features)
+        vectorizer.fit(self._corpus['processed_message'])
+        self._vectorized_Train_X = vectorizer.transform(self._Train_X)
+        self._vectorized_Test_X = vectorizer.transform(self._Test_X)
+
+    def save_data_set(self):
+        np.savetxt("Train_X.txt", self._vectorized_Train_X.toarray())
+        np.savetxt("Test_X.txt", self._vectorized_Test_X.toarray())
+        np.savetxt("Train_Y.txt", self._Train_Y.toarray())
+        np.savetxt("Test_Y.txt", self._Test_Y.toarray())
+
+class SpamHam_ML_Classification():
+
+    '''
+    _vectorized_Train_X, _vectorized_Test_X,
+    _Train_Y, _Test_Y
+    '''
+
+    def __init__(self,
+                vectorized_Train_X,
+                vectorized_Test_X,
+                Train_Y, Test_Y,
+                MultiNomial_NB=True, 
+                GaussianNB=True, 
+                BernoulliNB=True, 
+                SVC=True,
+                SGD=True, 
+                LogReg=True, 
+                RandomForest=True,
+                AdaBoost = True):
+
+        self._vectorized_Train_X = vectorized_Train_X
+        self._vectorized_Test_X = vectorized_Test_X
+        self._Train_Y = Train_Y 
+        self._Test_Y = Test_Y
+
+        if MultiNomial_NB: self.MultiNomial_NB_classify()
+
+    def MultiNomial_NB_classify(self):
+        classifier = MultinomialNB()
+        classifier.fit(self._vectorized_Train_X, self._Train_Y)
+        predictions_NB = classifier.predict(self._vectorized_Test_X)
+        print("Naive Bayes Accuracy Score -> ",accuracy_score(predictions_NB, self._Test_Y)*100)
+
+    def Gaussian_NB_classify(self):
+        classifier = GaussianNB()
 
 
 d = Import_Data()
-corpus = d.get_spam_ham_matrix()
-t = Text_Processor(corpus['Message'][0], lemmatize=True)
-print(t.get_message())
+dt = Data_Transform(d.get_spam_ham_matrix())
+trx, tex, tr_y, te_y = dt.get_data_vectors()
+cl = SpamHam_ML_Classification(trx, tex, tr_y, te_y)
+
 #print(d.get_spam_ham_matrix().head())
 
-# TODO implement TFIDF and classifier
