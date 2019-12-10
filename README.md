@@ -15,7 +15,7 @@ First of a properly installed Python v3.6+ is necessary. The content of the scri
 The files are available at [the projects git repository](https://github.com/thomasharms/1a1testtool.git). Feel free to fork or clone ahead. Provided you have a Python Environment or at least an installation running, copy the files in a folder of your choice.
 In case you need to install the PyData libraries, you can do so by using pip3 and a shell of your choice and execute:
 ```
-sudo pip3 install numpy, Pandas, sklearn
+sudo pip3 install numpy, Pandas, sklearn, scipy
 ```
 Installing NLTK requires a couple of additional steps, such as described [here](https://www.nltk.org/install.html):
 ```
