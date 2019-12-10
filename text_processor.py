@@ -14,7 +14,7 @@ from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.svm import SVC, LinearSVC, NuSVC
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn import model_selection
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 
 class Import_Data():
@@ -362,7 +362,7 @@ class Data_Transform():
         self._vectorized_Train_X = vectorizer.transform(self._Train_X)
         self._vectorized_Test_X = vectorizer.transform(self._Test_X)
 
-    # vectorize into bow model using CountVectorizer
+    # vectorize into tfidf model using TfidfVectorizer
     def vectorize_tfidf(self):
         vectorizer = TfidfVectorizer(max_features=self._max_features)
         vectorizer.fit(self._corpus['processed_message'])
@@ -378,18 +378,33 @@ class Data_Transform():
 class SpamHam_ML_Classification():
 
     '''
-    _vectorized_Train_X, _vectorized_Test_X,
+    _vectorized_Train_X, _vectorized_Test_X
+    _vectorized_Train_X_dense, _vectorized_Test_X_dense
     _Train_Y, _Test_Y
+
+    # Classifier:
+    MultiNomialNB_Classifier 
+    GaussianNB_Classifier
+    BernoulliNB_Classifier 
+    SVC_Classifier
+    LinearSVC_Classifier
+    SGD_Classifier 
+    LogReg_Classifier
+    
+    # technically those are comitees of classifiers
+    RandomForest_Classifier
+    AdaBoost_Classifier    
     '''
 
     def __init__(self,
                 vectorized_Train_X,
                 vectorized_Test_X,
                 Train_Y, Test_Y,
-                MultiNomial_NB=True, 
+                MultiNomialNB=True, 
                 GaussianNB=True, 
                 BernoulliNB=True, 
                 SVC=True,
+                LinearSVC=True,
                 SGD=True, 
                 LogReg=True, 
                 RandomForest=True,
@@ -400,16 +415,131 @@ class SpamHam_ML_Classification():
         self._Train_Y = Train_Y 
         self._Test_Y = Test_Y
 
-        if MultiNomial_NB: self.MultiNomial_NB_classify()
+        self.set_dense_matrices()
+        
+        if MultiNomialNB: self.MultiNomial_NB_classify()
+        if GaussianNB: self.Gaussian_NB_classify()
+        if BernoulliNB: self.Bernoulli_NB_classify()
+        if SVC: self.SVC_classify()
+        if LinearSVC: self.LinearSVC_classify()
+        if SGD: self.SGD_classify()
+        if LogReg: self.LG_classify()
+        if RandomForest: self.randomforest_classify()
+        if AdaBoost: self.adaboost_classify()
 
+    def set_dense_matrices(self):
+        self._vectorized_Train_X_dense = self._vectorized_Train_X.toarray()
+        self._vectorized_Test_X_dense = self._vectorized_Test_X.toarray()
+
+    # average could be changed: 'micro', 'macro' or 'weighted'
+    def precision_recall_fscore_metrics(self, y_true, y_pred, avg='micro'):
+        return precision_recall_fscore_support(y_true, y_pred, average=avg)
+
+    # score is expected to be something like 92 %
     def MultiNomial_NB_classify(self):
-        classifier = MultinomialNB()
-        classifier.fit(self._vectorized_Train_X, self._Train_Y)
-        predictions_NB = classifier.predict(self._vectorized_Test_X)
-        print("Naive Bayes Accuracy Score -> ",accuracy_score(predictions_NB, self._Test_Y)*100)
+        self.MultiNomialNB_Classifier = MultinomialNB()
+        self.MultiNomialNB_Classifier.fit(self._vectorized_Train_X, self._Train_Y)
+        predictions = self.MultiNomialNB_Classifier.predict(self._vectorized_Test_X)
+        precision, recall, fscore, _ = self.precision_recall_fscore_metrics(self._Test_Y, predictions)
+        print("Multinomial Naive Bayes Accuracy Score ::: ",accuracy_score(predictions, self._Test_Y)*100)
+        print("Multinomial Naive Bayes Precision Score ::: ",precision*100)
+        print("Multinomial Naive Bayes Recall Score ::: ",recall*100)
+        print("Multinomial Naive Bayes F-Score Score ::: ",fscore*100)
 
+    # score is expected to be something like 92 %
     def Gaussian_NB_classify(self):
-        classifier = GaussianNB()
+        self.GaussianNB_Classifier = GaussianNB()
+        self.GaussianNB_Classifier.fit(self._vectorized_Train_X_dense, self._Train_Y)
+        predictions = self.GaussianNB_Classifier.predict(self._vectorized_Test_X_dense)
+        precision, recall, fscore, _ = self.precision_recall_fscore_metrics(self._Test_Y, predictions)
+        print("Gaussian Naive Bayes Accuracy Score ::: ",accuracy_score(predictions, self._Test_Y)*100)
+        print("Gaussian Naive Bayes Precision Score ::: ",precision*100)
+        print("Gaussian Naive Bayes Recall Score ::: ",recall*100)
+        print("Gaussian Naive Bayes F-Score Score ::: ",fscore*100)
+
+    # score is expected to be something like 93 %
+    def Bernoulli_NB_classify(self):
+        self.BernoulliNB_Classifier = BernoulliNB()
+        self.BernoulliNB_Classifier.fit(self._vectorized_Train_X_dense, self._Train_Y)
+        predictions = self.BernoulliNB_Classifier.predict(self._vectorized_Test_X_dense)
+        precision, recall, fscore, _ = self.precision_recall_fscore_metrics(self._Test_Y, predictions)
+        print("Bernoulli Naive Bayes Accuracy Score ::: ",accuracy_score(predictions, self._Test_Y)*100)
+        print("Bernoulli Naive Bayes Precision Score ::: ",precision*100)
+        print("Bernoulli Naive Bayes Recall Score ::: ",recall*100)
+        print("Bernoulli Naive Bayes F-Score Score ::: ",fscore*100)
+
+    # score is expected to be something like 83 %
+    # might be better if classifier will be fine tuned though
+    def SVC_classify(self):
+        self.SVC_Classifier = SVC(gamma='auto')
+        self.SVC_Classifier.fit(self._vectorized_Train_X_dense, self._Train_Y)
+        predictions = self.SVC_Classifier.predict(self._vectorized_Test_X_dense)
+        precision, recall, fscore, _ = self.precision_recall_fscore_metrics(self._Test_Y, predictions)
+        print("C - Support Vector Classifier Accuracy Score ::: ",accuracy_score(predictions, self._Test_Y)*100)
+        print("C - Support Vector Classifier Precision Score ::: ",precision*100)
+        print("C - Support VectorClassifier Recall Score ::: ",recall*100)
+        print("C - Support Vector Classifier F-Score Score ::: ",fscore*100)
+
+    # score is expected to be something like 97 %
+    def LinearSVC_classify(self):
+        self.LinearSVC_Classifier = LinearSVC()
+        self.LinearSVC_Classifier.fit(self._vectorized_Train_X_dense, self._Train_Y)
+        predictions = self.LinearSVC_Classifier.predict(self._vectorized_Test_X_dense)
+        precision, recall, fscore, _ = self.precision_recall_fscore_metrics(self._Test_Y, predictions)
+        print("Linear Support Vector Classifier Accuracy Score ::: ",accuracy_score(predictions, self._Test_Y)*100)
+        print("Linear Support Vector Classifier Precision Score ::: ",precision*100)
+        print("Linear Support Vector Classifier Recall Score ::: ",recall*100)
+        print("Linear Support Vector Classifier F-Score Score ::: ",fscore*100)
+
+    # score is expected to be something like 97 %
+    # outcome is similar to svc
+    def SGD_classify(self):
+        self.SGD_Classifier = SGDClassifier()
+        self.SGD_Classifier.fit(self._vectorized_Train_X_dense, self._Train_Y)
+        predictions = self.SGD_Classifier.predict(self._vectorized_Test_X_dense)
+        precision, recall, fscore, _ = self.precision_recall_fscore_metrics(self._Test_Y, predictions)
+        print("Stochastic Gradient Descent Classifier Accuracy Score ::: ",accuracy_score(predictions, self._Test_Y)*100)
+        print("Stochastic Gradient Descent Classifier Precision Score ::: ",precision*100)
+        print("Stochastic Gradient Descent Classifier Recall Score ::: ",recall*100)
+        print("Stochastic Gradient Descent Classifier F-Score Score ::: ",fscore*100)
+
+    # score is expected to be something like 95 %
+    def LG_classify(self):
+        self.LogReg_Classifier = LogisticRegression(solver='lbfgs')
+        self.LogReg_Classifier.fit(self._vectorized_Train_X_dense, self._Train_Y)
+        predictions = self.LogReg_Classifier.predict(self._vectorized_Test_X_dense)
+        precision, recall, fscore, _ = self.precision_recall_fscore_metrics(self._Test_Y, predictions)
+        print("Logistic Regression Classifier Accuracy Score ::: ",accuracy_score(predictions, self._Test_Y)*100)
+        print("Logistic Regression Descent Classifier Precision Score ::: ",precision*100)
+        print("Logistic Regression Descent Classifier Recall Score ::: ",recall*100)
+        print("Logistic Regression Descent Classifier F-Score Score ::: ",fscore*100)
+
+    # leaving metric to gini for now, could be tested with entropy as well
+    # estimator fixed at 100 trees
+    # no max depth, more precise at min_samples_split()
+    # bootstrap is True to provide decrease in bias
+    # score is expected to be something like 96 %
+    def randomforest_classify(self):
+        self.RandomForest_Classifier = RandomForestClassifier(n_estimators=100)
+        self.RandomForest_Classifier.fit(self._vectorized_Train_X_dense, self._Train_Y)
+        predictions = self.RandomForest_Classifier.predict(self._vectorized_Test_X_dense)
+        precision, recall, fscore, _ = self.precision_recall_fscore_metrics(self._Test_Y, predictions)
+        print("Random Forest Classifier Accuracy Score ::: ",accuracy_score(predictions, self._Test_Y)*100)
+        print("Random Forest Descent Classifier Precision Score ::: ",precision*100)
+        print("Random Forest Descent Classifier Recall Score ::: ",recall*100)
+        print("Random Forest Descent Classifier F-Score Score ::: ",fscore*100)
+
+    # default alpha and weight are fairly reasonable
+    # score is expected to be something like 97.5 %
+    def adaboost_classify(self):
+        self.AdaBoost_Classifier = AdaBoostClassifier()
+        self.AdaBoost_Classifier.fit(self._vectorized_Train_X_dense, self._Train_Y)
+        predictions = self.AdaBoost_Classifier.predict(self._vectorized_Test_X_dense)
+        precision, recall, fscore, _ = self.precision_recall_fscore_metrics(self._Test_Y, predictions)
+        print("AdaBoost Classifier Accuracy Score ::: ",accuracy_score(predictions, self._Test_Y)*100)
+        print("AdaBoost Classifier Precision Score ::: ",precision*100)
+        print("AdaBoost Classifier Recall Score ::: ",recall*100)
+        print("AdaBoost Classifier F-Score Score ::: ",fscore*100)
 
 
 d = Import_Data()
