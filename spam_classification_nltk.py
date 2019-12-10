@@ -300,6 +300,7 @@ class Text_Processor():
         words = self._message.split()
         self._message = " ".join([w for w in words if len(w)>=min_word_length])
 
+
 # TODO build in precision, recall and f-score by nltk.metrics.scores -> (precision, recall)
 
 class SpamHam_NLP_Classification():
@@ -346,7 +347,7 @@ class SpamHam_NLP_Classification():
                     corpus_label_matrix,
                     NLTK_NB=True,
                     MultiNomialNB=True, 
-                    GaussianNB=True, 
+                    GaussianNB=False, 
                     BernoulliNB=True, 
                     SVC=True,
                     LinearSVC=True,
