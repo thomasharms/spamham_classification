@@ -1,6 +1,6 @@
 # Spam Classifiers
 
-This tool is providing fucntionality of classification of spam out of sets of mails. The mails are imported directly in mail format and processed by sanitizing html, removing stop words, lemmatizing and transforming the message into lower case characters. The data is being classified by several classifiers in two different ways. On one hand spam classification is being done by using sklearn libraries directly and classifying by transforming text with the TF-IDF algorithm. On the other hand the classification with the same classifiers is repeated by using the NLTK - SklearnClassifier import functions. The data is being transformed in a different for that purpose.
+This tool is providing functionality of classification of spam out of sets of mails. The mails are imported directly in mail format and processed by sanitizing html, removing stop words, lemmatizing and transforming the message into lower case characters. The data is being classified by several classifiers in two different ways. On one hand spam classification is being done by using sklearn libraries directly and classifying by transforming text with the TF-IDF algorithm. On the other hand the classification with the same classifiers is repeated by using the NLTK - SklearnClassifier import functions. The data is being transformed in a different for that purpose.
 
 ## Getting Started
 
