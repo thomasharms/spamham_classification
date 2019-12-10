@@ -50,7 +50,7 @@ The algorithm is done as follows:
 * build a Frequency Distribution of the set of all words
 * choose the n most common words as features (skiping the first couple of hundreds since they do not provide increase in entropy)
 * the feature_set is built by building a list of tuples, containing (hashmap of features, label)
-** the hashmap of features is looking for each word feature, if it is present in each document (word feature, 0/1)
+* the hashmap of features is looking for each word feature, if it is present in each document (word feature, 0/1)
 * training set and test set are build by spliting the feature_set
 * each Classifier is import using nltk.SklearnClassifier as a wrapper for the machine learning classifiers
 
