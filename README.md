@@ -1,6 +1,6 @@
 # Spam Classifiers
 
-The classification of spam out of sets of mails. The mails are imported directly in mail format and processed by sanitizing html, removing stop words, lemmatizing and transforming the message into lower case characters. The data is being classified by several classifiers in two different ways. On one hand spam classification is being done by using sklearn libraries directly and classifying by transforming text with the TF-IDF algorithm. On the other hand the classification with the same classifiers is repeated by using the NLTK - SklearnClassifier import functions. The data is being transformed in a different for that purpose.
+This tool is providing fucntionality of classification of spam out of sets of mails. The mails are imported directly in mail format and processed by sanitizing html, removing stop words, lemmatizing and transforming the message into lower case characters. The data is being classified by several classifiers in two different ways. On one hand spam classification is being done by using sklearn libraries directly and classifying by transforming text with the TF-IDF algorithm. On the other hand the classification with the same classifiers is repeated by using the NLTK - SklearnClassifier import functions. The data is being transformed in a different for that purpose.
 
 ## Getting Started
 
@@ -53,6 +53,11 @@ The algorithm is done as follows:
 * the hashmap of features is looking for each word feature, if it is present in each document (word feature, True/False)
 * training set and test set are build by spliting the feature_set
 * each Classifier is import using nltk.SklearnClassifier as a wrapper for the machine learning classifiers
+
+## Evaluation
+
+The scores for accuracy, precision, recall and F1 score are very reasonable and constant between 93% and 98%. AdaBoost and RandomForest -classifiers are usually a bit better since they are ensembling multiple classifiers and a voting system as well as weithed boosting respectively. However, the problem of overfitting the problem is being countered by AdaBoost, the SVM classifiers and RandomForest as well. AdaBoost and RandomForest are Bootstraping the data before training and SVM are bound towards the amount of support vectors. Furthermore there is a shuffle process of the training and test sets being implemented. While the outcome is constant and the score does not vary, the underfitting and overfitting concerns are not reasonable, hence the outcome can be trusted.
+In case of the ML approach, the TF-IDF counters the bias coming along by longer or shorter messages and counters the repitition of several words within longer texts. TF-IDF boosts words of average frequency distributed within the corpus as well as the split performed in the NLP approach by cuting out the first 300 most common distributed words.
 
 ## Versioning
 
