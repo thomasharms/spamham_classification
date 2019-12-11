@@ -25,12 +25,12 @@ Depending on your installation, install any additional packages and dependencies
 
 ## Running Classifiers
 
-There are two completely different ways of solving the classification problem: using machine learning algorithms by utilizing sparse matrices out of TF-IDF Vectorizers and using NLP appraoch by importing machine learning classifiers in a different fashion described in the following section.
+There are two completely different ways of solving the classification problem: using machine learning algorithms by utilizing sparse matrices out of TF-IDF Vectorizers and using NLP approach by importing machine learning classifiers in a different fashion described in the following section.
 
 ### ML Classifiers
 
 The script to run is spam_classification_ml.py . In order to do that you can run the script in two ways.
-* First off you could open a shell and navigate towards the location of the folder, you did put the data within the pulled git repository. After that you type in the shell:
+* First off you could open a shell and navigate towards the location of the folder, you put the data from the pulled/cloned git repository. Afterwards you excecute in a shell:
 ```
 sudo python3 ./spam_classification_ml.py
 ```
@@ -38,7 +38,7 @@ sudo python3 ./spam_classification_ml.py
 ```
 sudo python3 /location/of/your/git/folder/spam_classification_ml.py
 ```
-The classifiers will present an accuracy score, precision, recall and F1 Score value.
+The classifiers will present an accuracy score, precision, recall and F1 Score value to you.
 
 ### NLP Classification
 
